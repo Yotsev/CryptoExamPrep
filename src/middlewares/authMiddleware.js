@@ -12,7 +12,7 @@ exports.authentication = async (req, res, next)=>{
             res.locals.user = decodedToken;
         }catch(err){
             res.clearCookie('auth');
-            return res.status(401).render('/404');
+            return res.status(401).render('home/404');
         }
     }
 
@@ -20,8 +20,8 @@ exports.authentication = async (req, res, next)=>{
 };
 
 exports.isAuthenticated = (req, res, next)=>{
-    if (req.user) {
-        return res.redirect('/login');
+    if (!req.user) {
+        return res.redirect('/auth/login');
     }
 
     next();
