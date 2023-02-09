@@ -25,7 +25,7 @@ const cryptoSchema = new mongoose.Schema({
         required: [true, 'Description is required'],
         minLength: [10, 'description must be at least 10 characters long']
     },
-    paymentMethod: {
+    payment: {
         type: String,
         enum: ['crypto-wallet', 'credit-card', 'debit-card', 'paypal'],
         required: [true, 'Paymentmethod is required'],

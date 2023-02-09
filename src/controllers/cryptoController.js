@@ -7,6 +7,7 @@ const { getErrorMessage } = require('../utils/errorParser');
 cryptoController.get('/catalog', async (req, res) => {
     const cryptos = await cryptoService.getAllCrypto();
     const isCrypto = cryptos.length;
+
     res.render('crypto/catalog', {cryptos, isCrypto});
 });
 
@@ -25,6 +26,19 @@ cryptoController.post('/create', async (req, res) => {
     }
 
     res.redirect('/crypto/catalog');
+});
+
+cryptoController.get('/:id/details', authMiddleware.isAuthenticated, async (req, res)=> {
+    const crypto = await cryptoService.getOneCrypto(req.params.id);
+
+    if (!crypto) {
+        return res.redirect('/404');
+    }
+
+    const isOwner = crypto.owner == req.user._id;
+    const hasBought = !crypto.buy.includes(req.user._id);
+
+    res.render('crypto/details', {crypto, isOwner, hasBought});
 });
 
 module.exports = cryptoController
