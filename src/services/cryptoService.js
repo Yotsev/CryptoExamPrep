@@ -19,3 +19,18 @@ exports.getOneCrypto = async (id)=> {
 exports.cryptoUpdate = async (cryptoId, data)=> {
     await Crypto.findByIdAndUpdate(cryptoId, data, {runValidators: true});
 } 
+
+exports.deleteCrypto = async(cryptoId)=> {
+    await Crypto.findByIdAndDelete(cryptoId);
+}
+
+exports.buyCrypto = async (cryptoId, userId) => {
+    const crypto = await Crypto.findById(cryptoId);
+
+    if (crypto.buy.includes(userId)) {
+        throw new Error('Cannot buy twice');
+    }
+
+    crypto.buy.push(userId);
+    await crypto.save();
+}

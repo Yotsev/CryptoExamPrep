@@ -18,7 +18,6 @@ cryptoController.get('/create', authMiddleware.isAuthenticated, (req, res) => {
 
 cryptoController.post('/create', async (req, res) => {
     const { name, image, price, description, payment } = req.body;
-    console.log(req.body);
 
     try {
         await cryptoService.createCrypto(name, image, price, description, payment, req.user._id);
@@ -56,15 +55,35 @@ cryptoController.get('/:id/edit', authMiddleware.isAuthenticated, async (req, re
         return res.redirect('/404');
     }
 
-    res.render('crypto/edit',{crypto, payment});
+    res.render('crypto/edit', { crypto, payment });
 });
 
-cryptoController.post('/:id/edit', authMiddleware.isAuthenticated, async (req, res)=> {
-    const {name, image, price, description, payment} = req.body;
-    
-    await cryptoService.cryptoUpdate(req.params.id, {name, image, price, description, payment});
+cryptoController.post('/:id/edit', authMiddleware.isAuthenticated, async (req, res) => {
+    const { name, image, price, description, payment } = req.body;
+
+    await cryptoService.cryptoUpdate(req.params.id, { name, image, price, description, payment });
 
     res.redirect(`/crypto/${req.params.id}/details`);
 });
+
+cryptoController.get('/:id/delete', authMiddleware.isAuthenticated, async (req, res) => {
+    await cryptoService.deleteCrypto(req.params.id);
+
+    res.redirect('/crypto/catalog');
+});
+
+cryptoController.get('/:id/buy', authMiddleware.isAuthenticated, async (req, res) => {
+    //TODO: Finish buy functionality
+    
+    try {
+        await cryptoService.buyCrypto(req.params.id, req.user._id);
+        res.locals.hasBought = false;
+
+    } catch (err) {
+       return res.status(403).render(`/crypto/${req.params.id}/details`);
+    }
+
+    res.redirect(`/crypto/${req.params.id}/details`);
+})
 
 module.exports = cryptoController
