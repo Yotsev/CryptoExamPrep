@@ -15,3 +15,7 @@ exports.getOneCrypto = async (id)=> {
     
     return crypto;
 };
+
+exports.cryptoUpdate = async (cryptoId, data)=> {
+    await Crypto.findByIdAndUpdate(cryptoId, data, {runValidators: true});
+} 
