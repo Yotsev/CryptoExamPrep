@@ -1,5 +1,6 @@
 const cryptoRouter = require('express').Router();
 
+const { paymentMethodsMap } = require('../constants');
 const { isAuthenticated } = require('../middlewares/authMiddleware');
 const cryptoService = require('../services/cryptoService');
 const { getErrorMessage } = require('../utils/errorParser');
@@ -40,6 +41,7 @@ cryptoRouter.get('/:cryptoId/details', async (req, res) => {
     const isOwner = crypto.owner == req.user?._id;
     const isBuyer = crypto.buyers?.some(id => id == req.user._id);
 
+    crypto.paymentMethod = paymentMethodsMap[crypto.paymentMethod]//bonus to show the right text
     res.render('crypto/details', { crypto, isOwner, isBuyer });
 });
 
