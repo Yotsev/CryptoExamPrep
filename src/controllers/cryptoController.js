@@ -1,89 +1,105 @@
-const cryptoController = require('express').Router();
+const cryptoRouter = require('express').Router();
 
-const authMiddleware = require('../middlewares/authMiddleware');
+const { isAuthenticated } = require('../middlewares/authMiddleware');
 const cryptoService = require('../services/cryptoService');
 const { getErrorMessage } = require('../utils/errorParser');
-const { generatePaymentMethod } = require('../utils/cryptoUtils');
+const { getPaymentMethodViewData } = require('../utils/viewDataUtils');
 
-cryptoController.get('/catalog', async (req, res) => {
-    const cryptos = await cryptoService.getAllCrypto();
-    const isCrypto = cryptos.length;
-
-    res.render('crypto/catalog', { cryptos, isCrypto });
-});
-
-cryptoController.get('/create', authMiddleware.isAuthenticated, (req, res) => {
+//Get Create Page
+cryptoRouter.get('/create', isAuthenticated, (req, res) => {
     res.render('crypto/create');
 });
 
-cryptoController.post('/create', async (req, res) => {
-    const { name, image, price, description, payment } = req.body;
+//Post Create Page
+cryptoRouter.post('/create', isAuthenticated, async (req, res) => {
+    const cryptoData = req.body;
 
     try {
-        await cryptoService.createCrypto(name, image, price, description, payment, req.user._id);
+
+        await cryptoService.create(req.user._id, cryptoData);
     } catch (err) {
+
+        console.log(getErrorMessage(err));
         return res.status(400).render('crypto/create', { error: getErrorMessage(err) });
     }
 
     res.redirect('/crypto/catalog');
 });
 
-cryptoController.get('/:id/details', authMiddleware.isAuthenticated, async (req, res) => {
-    const crypto = await cryptoService.getOneCrypto(req.params.id);
+//Get Catalog Page
+cryptoRouter.get('/catalog', async (req, res) => {
+    const crypto = await cryptoService.getAll();
 
-    if (!crypto) {
-        return res.redirect('/404');
-    }
-
-    const isOwner = crypto.owner == req.user._id;
-    const hasBought = !crypto.buy.includes(req.user._id);
-
-    res.render('crypto/details', { crypto, isOwner, hasBought });
+    res.render('crypto/catalog', { crypto })
 });
 
-cryptoController.get('/:id/edit', authMiddleware.isAuthenticated, async (req, res) => {
-    const crypto = await cryptoService.getOneCrypto(req.params.id);
-    const payment = generatePaymentMethod(crypto.payment);
+//Get Details Page
+cryptoRouter.get('/:cryptoId/details', async (req, res) => {
+    const id = req.params.cryptoId;
+    const crypto = await cryptoService.getOne(id);
+    const isOwner = crypto.owner == req.user?._id;
+    const isBuyer = crypto.buyers?.some(id => id == req.user._id);
 
-    if (!crypto) {
-        return res.redirect('/404');
-    }
-
-    const isOwner = crypto.owner == req.user._id;
-
-    if (!isOwner) {
-        return res.redirect('/404');
-    }
-
-    res.render('crypto/edit', { crypto, payment });
+    res.render('crypto/details', { crypto, isOwner, isBuyer });
 });
 
-cryptoController.post('/:id/edit', authMiddleware.isAuthenticated, async (req, res) => {
-    const { name, image, price, description, payment } = req.body;
+//Get Edit Page
+cryptoRouter.get('/:cryptoId/edit', isAuthenticated, async (req, res) => {
+    const crypto = await cryptoService.getOne(req.params.cryptoId);
 
-    await cryptoService.cryptoUpdate(req.params.id, { name, image, price, description, payment });
+    if (crypto.owner != req.user._id) {
+        return res.redirect('home/404');
+    }
 
-    res.redirect(`/crypto/${req.params.id}/details`);
+    const paymentMethods = getPaymentMethodViewData(crypto.paymentMethod);
+
+    res.render('crypto/edit', { crypto, paymentMethods });
 });
 
-cryptoController.get('/:id/delete', authMiddleware.isAuthenticated, async (req, res) => {
-    await cryptoService.deleteCrypto(req.params.id);
+//Post Edit Page
+cryptoRouter.post('/:cryptoId/edit', isAuthenticated, async (req, res) => {
+    const cryptoData = req.body;
+    const crypto = await cryptoService.edit(req.params.cryptoId, cryptoData);
+
+    if (crypto.owner != req.user._id) {
+        return res.redirect('/home/404');
+    }
+
+    res.redirect(`/crypto/${req.params.cryptoId}/details`);
+});
+
+//Get Delete Page
+cryptoRouter.get('/:cryptoId/delete', isAuthenticated, async (req, res) => {
+    const crypto = await cryptoService.getOne(req.params.cryptoId);
+
+    if (crypto.owner != req.user._id) {
+        return res.redirect('/home/404');
+    }
+
+    await cryptoService.delete(req.params.cryptoId);
 
     res.redirect('/crypto/catalog');
 });
 
-cryptoController.get('/:id/buy', authMiddleware.isAuthenticated, async (req, res) => {
-    //TODO: Finish buy functionality
+//Get Buy Page
+cryptoRouter.get('/:cryptoId/buy', isAuthenticated, async (req, res) => {
     
-    try {
-        await cryptoService.buyCrypto(req.params.id, req.user._id);
-        res.locals.hasBought = false;
+    try{
+        await cryptoService.buy(req.user._id, req.params.cryptoId);
 
-    } catch (err) {
-       return res.status(403).render(`/crypto/${req.params.id}/details`);
+    }catch (err){
+        return res.status(400).render('home/404', {error: getErrorMessage(err)}); // Or redirect without message
     }
 
-    res.redirect(`/crypto/${req.params.id}/details`);
-})
+    res.redirect(`/crypto/${req.params.cryptoId}/details`);
+});
 
-module.exports = cryptoController
+cryptoRouter.get('/search', isAuthenticated, async (req, res) => {
+    const { name, paymentMethod } = req.query;
+    const crypto = await cryptoService.search(name, paymentMethod);
+    const paymentMethods = getPaymentMethodViewData(paymentMethod);
+    
+    res.render('crypto/search', { crypto, paymentMethods, name});
+});
+
+module.exports = cryptoRouter;

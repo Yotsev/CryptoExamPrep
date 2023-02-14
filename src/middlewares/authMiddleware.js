@@ -1,5 +1,6 @@
 const jwt = require('../libs/jsonwebtoken');
 const config = require('../configs/config');
+
 exports.authentication = async (req, res, next)=>{
     const token = req.cookies['auth'];
 

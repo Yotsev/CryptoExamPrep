@@ -1,36 +1,40 @@
 const Crypto = require('../models/Crypto');
 
-exports.createCrypto = async (name, image, price, description, payment, owner)=> {
-    await Crypto.create({name, image, price, description, payment, owner});
-};
+exports.create = (ownerId, cryptoData) => Crypto.create({ ...cryptoData, owner: ownerId });
 
-exports.getAllCrypto = async ()=> {
-    const crypto = await Crypto.find({}).lean();
+exports.getAll = () => Crypto.find({}).lean();
 
-    return crypto;
-};
+exports.getOne = (cryptoId) => Crypto.findById(cryptoId).lean();
 
-exports.getOneCrypto = async (id)=> {
-    const crypto = await Crypto.findById(id).populate('buy').lean();
-    
-    return crypto;
-};
+exports.buy = async (userId, cryptoId) => {
+    //Better way
+    //Crypto.findByIdAndUpdate(cryptoId,{$push: {buyers: userId}});
 
-exports.cryptoUpdate = async (cryptoId, data)=> {
-    await Crypto.findByIdAndUpdate(cryptoId, data, {runValidators: true});
-} 
-
-exports.deleteCrypto = async(cryptoId)=> {
-    await Crypto.findByIdAndDelete(cryptoId);
-}
-
-exports.buyCrypto = async (cryptoId, userId) => {
     const crypto = await Crypto.findById(cryptoId);
 
-    if (crypto.buy.includes(userId)) {
-        throw new Error('Cannot buy twice');
+    //TODO: Check if the user bought the crypto
+    crypto.buyers.push(userId);
+
+    //We can return it if we need it
+    //return crypto.save();
+
+    await crypto.save();
+};
+
+exports.edit = (cryptoId, cryptoData) => Crypto.findByIdAndUpdate(cryptoId, cryptoData);
+
+exports.delete = (cryptoId) => Crypto.findByIdAndDelete(cryptoId);
+
+exports.search = async (name, paymentMethod) => {
+    let crypto = await this.getAll();
+
+    if (name) {
+        crypto = crypto.filter(x=>x.name.toLowerCase() === name.toLowerCase());
     }
 
-    crypto.buy.push(userId);
-    await crypto.save();
+    if (paymentMethod) {
+        crypto = crypto.filter(x=>x.paymentMethod === paymentMethod);
+    }
+
+    return crypto;
 }

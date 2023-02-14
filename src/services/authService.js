@@ -20,7 +20,7 @@ exports.register = async (username, email, password, repeatPassword) => {
         throw new Error('User exists');
     }
 
-    if (password.length < 4) {
+    if (password.length < passwordLenght) {
         throw new Error('Password must be at least 4 characters long');
     }
 

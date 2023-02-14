@@ -1,10 +1,13 @@
 const authController = require('express').Router();
 const authService = require('../services/authService');
 const { getErrorMessage } = require('../utils/errorParser');
+
+//Get Register Page
 authController.get('/register', (req, res) => {
     res.render('auth/register');
 });
 
+//Post Register Page
 authController.post('/register', async (req, res) => {
     const { username, email, password, repeatPassword } = req.body;
 
@@ -18,11 +21,12 @@ authController.post('/register', async (req, res) => {
     }
 });
 
-
+//Get LoginPage
 authController.get('/login', (req, res) => {
     res.render('auth/login');
 });
 
+//Post Login Page
 authController.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
@@ -36,10 +40,10 @@ authController.post('/login', async (req, res) => {
     }
 });
 
+//Get Logout Page
 authController.get('/logout', (req, res) => {
     res.clearCookie('auth');
     res.redirect('/');
 });
-
 
 module.exports = authController;
